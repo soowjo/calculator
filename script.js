@@ -5,12 +5,19 @@ const buttons = document.querySelectorAll('button');
 window.addEventListener('keydown', inputData)
 buttons.forEach(button => button.addEventListener('click', inputData))
 
-mainDisplay.textContent = '0';
-auxDisplay.textContent = '';
+let inputValue;
+reset();
+
+function reset() {
+    mainDisplay.textContent = '0';
+    auxDisplay.textContent = '';
+    inputValue = '';
+}
 
 function inputData(e) {
-    // accept valid inputs
-    let inputValue;
+    if (inputValue == 'equal' || inputValue == 'Enter') {
+        reset();
+    }
     if (/\d|[\.]/.test(this.id)) {
         inputValue = this.id;
         numberInput(inputValue);
@@ -36,27 +43,51 @@ function inputData(e) {
                 }
                 break;
             case 'clear':
-                mainDisplay.textContent = '0';
+                reset();
                 break;
             case 'equal':
-                operate(operator,a,b);
+                mainDisplay.textContent = operate(auxDisplay, mainDisplay);
+                auxDisplay.textContent = '';
+                inputValue = this.id;
                 break;
-            case 'pm':
-                mainDisplay.textContent = '-'+mainDisplay.textContent
+            case 'sign':
+                if (mainDisplay.textContent == '0') {
+                    mainDisplay.textContent = '-';
+                }
+                else if (mainDisplay.textContent == '-') {
+                    mainDisplay.textContent = '0';
+                }
+                else if (mainDisplay.textContent[0] == '-') {
+                    mainDisplay.textContent = mainDisplay.textContent.slice(1);
+                }
+                else {
+                    mainDisplay.textContent = '-'+mainDisplay.textContent;
+                }
+                break;
         }
-
+        switch (e.key) {
+            case 'Backspace':
+                mainDisplay.textContent = mainDisplay.textContent.slice(0,-1);
+                if (mainDisplay.textContent == '') {
+                    mainDisplay.textContent = '0';
+                }
+                break;
+            case 'Enter':
+                operate(auxDisplay, mainDisplay);
+                inputValue = e.key;
+                break;
+        }
     }
 }
 
 function numberInput(inputValue) {
-    // check input validity
     if (mainDisplay.textContent == '0' && /[0\*\+\-\/\^]/.test(inputValue)) {
         return;
     }
     else if (mainDisplay.textContent.includes('.') && /[\.]/.test(inputValue)) {
         return;
     }
-    else if (/[1-9\.]/.test(inputValue)) {
+    else if (/[0-9\.]/.test(inputValue)) {
         if (mainDisplay.textContent == '0') {
             mainDisplay.textContent = '';
         }
@@ -65,29 +96,33 @@ function numberInput(inputValue) {
 }
 
 function operatorInput(inputValue) {
-    if (/^[\+\-]?[0-9]+\.?[0-9]*$/.test(mainDisplay.textcontent)) {
-        if (auxDisplay == '') {
+    if (/^[\+\-]?[0-9]+\.?[0-9]*$/.test(mainDisplay.textContent)) {
+        if (auxDisplay.textContent == '') {
             auxDisplay.textContent = mainDisplay.textContent;
-            auxDisplay.textContent += ` ${inputValue}`
         }
-        else 
-
+        else if ((/[\+\-]?[0-9]+\.?[0-9]*\s[\*\+\-\/\^]/).test(auxDisplay.textContent)) {
+            auxDisplay.textContent = operate(auxDisplay, mainDisplay)
+        }
+        auxDisplay.textContent += ` ${inputValue}`;
+        mainDisplay.textContent = '0';
     } 
 }
 
 function operate(aux, main) {
-    let operator = aux.match(/[\*\+\-\/\^]/);
-    let a = aux.match(/[\+\-]?[0-9]+\.?[0-9]/);
-    let b = main
+    let operator = aux.textContent.match(/[\*\+\-\/\^]/)[0];
+    let a = parseFloat(aux.textContent.match(/[\+\-]?[0-9]+\.?[0-9]*/)[0]);
+    let b = parseFloat(main.textContent)
     switch (operator) {
         case '+':
-            add(a,b);
+            return add(a,b);
         case '-':
-            substract(a,b);
+            return substract(a,b);
         case '*':
-            multiply(a,b);
+            return multiply(a,b);
         case '/':
-            divide(a,b);
+            return divide(a,b);
+        case '^':
+            return exponentiate(a,b);
     }
 }
 
@@ -107,5 +142,6 @@ function divide(a,b) {
     return a/b;
 }
 
-
-
+function exponentiate(a,b) {
+    return a**b;
+}
