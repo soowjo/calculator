@@ -2,22 +2,21 @@ const mainDisplay = document.querySelector('#mainDisplay');
 const auxDisplay = document.querySelector('#auxDisplay');
 const buttons = document.querySelectorAll('button');
 
-window.addEventListener('keydown', inputData)
-buttons.forEach(button => button.addEventListener('click', inputData))
+buttons.forEach(button => button.addEventListener('click', inputData));
+window.addEventListener('keydown', inputData);
+buttons.forEach(button => button.addEventListener('keydown', button.blur));
 
+let resetSwitch = false;
+mainDisplay.textContent = '0';
+auxDisplay.textContent = '';
 let inputValue;
-reset();
-
-function reset() {
-    mainDisplay.textContent = '0';
-    auxDisplay.textContent = '';
-    inputValue = '';
-}
 
 function inputData(e) {
-    if (inputValue == 'equal' || inputValue == 'Enter') {
-        reset();
+    if (/\d|[\.]/.test(inputValue) && resetSwitch) {
+        mainDisplay.textContent = '0';
+        auxDisplay.textContent = '';
     }
+    resetSwitch = false;
     if (/\d|[\.]/.test(this.id)) {
         inputValue = this.id;
         numberInput(inputValue);
@@ -34,7 +33,7 @@ function inputData(e) {
         inputValue = e.key;
         operatorInput(inputValue);
     }
-    else {
+    else if (this.id) {
         switch (this.id) {
             case 'back':
                 mainDisplay.textContent = mainDisplay.textContent.slice(0,-1);
@@ -42,13 +41,15 @@ function inputData(e) {
                     mainDisplay.textContent = '0';
                 }
                 break;
-            case 'clear':
-                reset();
+            case 'reset':
+                mainDisplay.textContent = '0';
+                auxDisplay.textContent = '';
+                resetSwitch = false;
                 break;
             case 'equal':
                 mainDisplay.textContent = operate(auxDisplay, mainDisplay);
                 auxDisplay.textContent = '';
-                inputValue = this.id;
+                resetSwitch = true;
                 break;
             case 'sign':
                 if (mainDisplay.textContent == '0') {
@@ -64,7 +65,11 @@ function inputData(e) {
                     mainDisplay.textContent = '-'+mainDisplay.textContent;
                 }
                 break;
+            default:
+                break;
         }
+    }
+    else if (e.key) {
         switch (e.key) {
             case 'Backspace':
                 mainDisplay.textContent = mainDisplay.textContent.slice(0,-1);
@@ -73,9 +78,11 @@ function inputData(e) {
                 }
                 break;
             case 'Enter':
-                operate(auxDisplay, mainDisplay);
-                inputValue = e.key;
+                mainDisplay.textContent = operate(auxDisplay, mainDisplay);
+                auxDisplay.textContent = '';
+                resetSwitch = true;
                 break;
+            default:
         }
     }
 }
@@ -87,10 +94,13 @@ function numberInput(inputValue) {
     else if (mainDisplay.textContent.includes('.') && /[\.]/.test(inputValue)) {
         return;
     }
-    else if (/[0-9\.]/.test(inputValue)) {
+    else if (/[0-9]/.test(inputValue)) {
         if (mainDisplay.textContent == '0') {
             mainDisplay.textContent = '';
         }
+        mainDisplay.textContent += inputValue;
+    }
+    else if (/[\.]/.test(inputValue)) {
         mainDisplay.textContent += inputValue;
     }
 }
@@ -109,6 +119,9 @@ function operatorInput(inputValue) {
 }
 
 function operate(aux, main) {
+    if (!((/[\+\-]?[0-9]+\.?[0-9]*\s[\*\+\-\/\^]/).test(auxDisplay.textContent))) {
+        return main.textContent;
+    }
     let operator = aux.textContent.match(/[\*\+\-\/\^]/)[0];
     let a = parseFloat(aux.textContent.match(/[\+\-]?[0-9]+\.?[0-9]*/)[0]);
     let b = parseFloat(main.textContent)
@@ -120,6 +133,9 @@ function operate(aux, main) {
         case '*':
             return multiply(a,b);
         case '/':
+            if (b == 0) {
+                return 'Nope';
+            }
             return divide(a,b);
         case '^':
             return exponentiate(a,b);
